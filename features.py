@@ -324,4 +324,4 @@ for epoch in range(num_epochs):
     y_test = np.reshape(y_test, (1, -1))[0]
     # print(y_pred_list)
     # print(confusion_matrix(y_test, y_pred_list))
-    print(classification_report(y_test, y_pred_list))
+   print(classification_report(MultiLabelBinarizer().fit_transform(y_test), MultiLabelBinarizer().fit_transform(y_pred_list)))
