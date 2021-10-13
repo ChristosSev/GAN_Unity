@@ -17,13 +17,13 @@ random.seed(manualSeed)
 torch.manual_seed(manualSeed)
 
 # Root directory for dataset
-dataroot = "/home/christos_sevastopoulos/Downloads/celeba/ALEKOS_WH"
+dataroot = "/home/christos_sevastopoulos/Downloads/celeba/POSITIVE_VINEYARD"
 
 # Number of workers for dataloader
 workers = 2
 
 # Batch size during training
-batch_size = 64
+batch_size = 256
 
 # Spatial size of training images. All images will be resized to this
 #   size using a transformer.
@@ -42,13 +42,13 @@ ngf = 64
 ndf = 64
 
 # Number of training epochs
-num_epochs = 10
+num_epochs = 100
 
 # Learning rate for optimizers
-lr = 0.00001
+lr = 0.0001
 
 # Beta1 hyperparam for Adam optimizers
-beta1 = 0.5
+beta1 = 0.9#0.5
 
 # Number of GPUs available. Use 0 for CPU mode.
 ngpu = 1
@@ -68,6 +68,12 @@ dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size,
 # Decide which device we want to run on
 device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
 
+# # Plot some training images
+# real_batch = next(iter(dataloader))
+# plt.figure(figsize=(8,8))
+# plt.axis("off")
+# plt.title("Training Images")
+# plt.imshow(np.transpose(vutils.make_grid(real_batch[0].to(device)[:64], padding=2, normalize=True).cpu(),(1,2,0)))
 
 
 # custom weights initialization called on netG and netD
@@ -107,9 +113,9 @@ class Generator(nn.Module):
 
         )
     def forward(self, x):
-        # print(x.size())
+
         x = self.linear1(x)
-        # print(x.size())
+
         x = x.view(-1,512, 4, 4)
         # print(x.size())
         x = self.deconv1(x)
@@ -230,7 +236,7 @@ netI.apply(weights_init)
 
 
 
-criterion = nn.HingeEmbeddingLoss()
+criterion = nn.BCELoss()
 
 # Create batch of latent vectors that we will use to visualize
 #  the progression of the generator
@@ -334,10 +340,10 @@ for epoch in range(num_epochs):
         iters += 1
 
 #Saving the models
-torch.save(netD.state_dict(), 'model510D.pth')
+torch.save(netD.state_dict(), 'model1210D.pth')
 
-torch.save(netI.state_dict(), 'model510I.pth')
-torch.save(netG.state_dict(), 'model510H.pth')
+torch.save(netI.state_dict(), 'model1210I.pth')
+torch.save(netG.state_dict(), 'model1210H.pth')
 
 
 
@@ -364,7 +370,7 @@ plt.imshow(np.transpose(vutils.make_grid(real_batch[0].to(device)[:64], padding=
 # Plot the fake images from the last epoch
 plt.subplot(1,2,2)
 plt.axis("off")
-plt.title("Fake Images")
+plt.title("Fake Images S")
 plt.imshow(np.transpose(img_list[-1],(1,2,0)))
 plt.show()
 
