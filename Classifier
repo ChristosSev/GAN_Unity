@@ -10,7 +10,9 @@ import numpy as np
 import matplotlib.pyplot
 from torchvision import models
 from torchsummary import summary
+from sklearn.preprocessing import MultiLabelBinarizer
 from sklearn.metrics import confusion_matrix, classification_report
+import matplotlib.pyplot as plt
 
 #Define the parameters
 ndf = ngf = 64
@@ -20,7 +22,10 @@ ngpu = 1
 nz = 100
 nc = 3
 batch_size = 64
-dataroot = "/home/christos_sevastopoulos/Downloads/celeba/ALEKOS_WH_OLD"
+lr = 0.0001
+beta1 = 0.9
+
+dataroot = "/home/christos_sevastopoulos/Downloads/celeba/POSITIVE_VINEYARD"
 device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
 
 
@@ -40,6 +45,9 @@ test_data = dset.ImageFolder(test_data_directory, transform=transforms.Compose([
                                transforms.CenterCrop(image_size),
                                transforms.ToTensor(),
                                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),]))
+
+# print(train_data.class_to_idx)
+# print(test_data.class_to_idx)
 
 #Load the data
 train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size,shuffle=True)
@@ -191,19 +199,17 @@ netL.to(device)
 netD = Discriminator(ngpu)
 netG = Generator(ngpu)
 netI = InvG(ngpu)
-netD.load_state_dict(torch.load('model510D.pth'))
-netG.load_state_dict(torch.load('model510H.pth'))
-netI.load_state_dict(torch.load('model510I.pth'))
+netD.load_state_dict(torch.load('model1410D.pth'))
+netG.load_state_dict(torch.load('model1410H.pth'))
+netI.load_state_dict(torch.load('model1410I.pth'))
 
 netD.eval()
 netG.eval()
 netI.eval()
-# original_model = torch.load('model510D.pth')
-# model = original_model
+
+
+#Extract the features
 netD = nn.Sequential(*list(netD.children())[:1])
-# print(netD)
-# print(netG)
-# print(netI)
 
 netD.to(device)
 netG.to(device)
@@ -214,8 +220,7 @@ netD.requires_grad = False
 netG.requires_grad = False
 netI.requires_grad = False
 
-lr = 0.0001
-beta1 = 0.9#0.5
+
 optimizer = optim.Adam(netD.parameters(), lr=lr, betas=(beta1, 0.999))
 
 criterion = nn.BCELoss()
@@ -231,27 +236,20 @@ dataset = dset.ImageFolder(root=dataroot,
 dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size,
                                          shuffle=True, num_workers=2)
 
-
-def binary_acc(y_pred, y_test):
-    y_pred_tag = torch.round(y_pred)
-
-    correct_results_sum = (y_pred_tag == y_test).sum().float()
-    acc = correct_results_sum / y_test.shape[0]
-    acc = torch.round(acc * 100)
-
-    return acc
-
-
 #Training
+acc_list  = np.array([])
+prec_list = np.array([])
+rec_list  = np.array([])
 for epoch in range(num_epochs):
     print("Training...")
+
     for i, data in enumerate(train_loader, 0):
         netL.zero_grad()
         # print(data[1])
         image_real, label = data
         image_real = image_real.to(device)
         b_size = image_real.size(0)
-        label = torch.tensor(label, dtype=torch.float, device=device)
+        label = label.type(torch.float).to(device)
         image_inv = netI(image_real)
         image_fake = netG(image_inv)
         dis_real = netD(image_real)
@@ -270,26 +268,18 @@ for epoch in range(num_epochs):
         # Calculate gradients for D in backward pass+
         err.backward()
         loss = output.mean().item()
-
         optimizer.step()
-        # losses.append(loss.item())
-        # Output training stats
-        acc = binary_acc(output,label)
-        if i % 10 == 0:
-            print('[%d/%d][%d/%d]\tLoss: %.4f\tAcc: %.4f'
-                  % (epoch, num_epochs, i, len(train_loader),
-                     loss, acc))
 
     print("Testing...")
-    y_pred_list = []
-    y_test = []
+    y_pred_list = np.array([])
+    y_test = np.array([])
     with torch.no_grad():
         for i, data in enumerate(test_loader, 0):
             # print(data[1])
             image_real, label = data
             image_real = image_real.to(device)
             b_size = image_real.size(0)
-            label = torch.tensor(label, dtype=torch.float, device=device)
+            label = label.type(torch.float).to(device)
             image_inv = netI(image_real)
             image_fake = netG(image_inv)
             dis_real = netD(image_real)
@@ -307,21 +297,33 @@ for epoch in range(num_epochs):
             err = criterion(output, label)
             # Calculate gradients for D in backward pass+
             loss = output.mean().item()
-            acc = binary_acc(output, label)
+            # acc = binary_acc(output, label)
 
             y_pred_tag = torch.round(output)
-            y_pred_list.append(y_pred_tag.cpu())
-            y_test.append(y_pred_tag.cpu())
+            y_pred_list = np.hstack((y_pred_list, y_pred_tag.cpu()))
+            y_test = np.hstack((y_test, label.cpu()))
             # Output Testing stats
-            if i % 10 == 0:
-                print('[%d/%d][%d/%d]\tLoss: %.4f\tAcc: %.4f'
-                      % (epoch, num_epochs, i, len(test_loader),
-                         loss , acc))
-    # print(y_pred_list, y_test)
-    y_pred_list = np.array([torch.squeeze(a).tolist() for a in y_pred_list])
-    y_pred_list = np.reshape(y_pred_list, (1,-1))[0]
-    y_test = np.array([torch.squeeze(a).tolist() for a in y_test])
-    y_test = np.reshape(y_test, (1, -1))[0]
+
     # print(y_pred_list)
-    # print(confusion_matrix(y_test, y_pred_list))
-   print(classification_report(MultiLabelBinarizer().fit_transform(y_test), MultiLabelBinarizer().fit_transform(y_pred_list)))
+    # print(y_test)
+    # print(y_pred_list.shape)
+    # print(y_test.shape)
+    report = classification_report(y_test, y_pred_list, output_dict=True)
+    acc = report["accuracy"] * 100
+    print('[%d/%d]:\tAccuracy: %.4f' % (epoch+1, num_epochs, acc))
+    print(classification_report(y_test, y_pred_list))
+    prec = report['1.0']['precision'] * 100
+    rec  = report['1.0']['recall'] * 100
+    acc_list  = np.hstack((acc_list, acc))
+    prec_list = np.hstack((prec_list, prec))
+    rec_list  = np.hstack((rec_list, rec))
+
+plt.figure(figsize=(10,5))
+plt.title("Stats During Training")
+plt.plot(acc_list,label="A")
+plt.plot(prec_list,label="P")
+plt.plot(rec_list, label="R")
+plt.xlabel("epoch")
+plt.ylabel("%")
+plt.legend()
+plt.show()
