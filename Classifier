@@ -22,8 +22,8 @@ ngpu = 1
 nz = 100
 nc = 3
 batch_size = 64
-lr = 0.0001
-beta1 = 0.9
+lr = 0.00001
+beta1 = 0.85
 
 dataroot = "/home/christos_sevastopoulos/Downloads/celeba/POSITIVE_VINEYARD"
 device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
