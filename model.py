@@ -9,15 +9,13 @@ import torchvision.utils as vutils
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Set random seed for reproducibility
-manualSeed = 999
-#manualSeed = random.randint(1, 10000) # use if you want new results
+
 print("Random Seed: ", manualSeed)
 random.seed(manualSeed)
 torch.manual_seed(manualSeed)
 
 # Root directory for dataset
-dataroot = "/home/christos_sevastopoulos/Downloads/celeba/POSITIVE_VINEYARD"
+dataroot = "/home/christos_sevastopoulos/Downloads/POSITIVE_VINEYARD"
 
 # Number of workers for dataloader
 workers = 2
@@ -68,12 +66,6 @@ dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size,
 # Decide which device we want to run on
 device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
 
-# # Plot some training images
-# real_batch = next(iter(dataloader))
-# plt.figure(figsize=(8,8))
-# plt.axis("off")
-# plt.title("Training Images")
-# plt.imshow(np.transpose(vutils.make_grid(real_batch[0].to(device)[:64], padding=2, normalize=True).cpu(),(1,2,0)))
 
 
 # custom weights initialization called on netG and netD
@@ -238,9 +230,6 @@ netI.apply(weights_init)
 
 criterion = nn.BCELoss()
 
-# Create batch of latent vectors that we will use to visualize
-#  the progression of the generator
-#fixed_noise = torch.randn(64, nz, device=device)
 
 
 # Establish convention for real and fake labels during training
