@@ -10,9 +10,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-print("Random Seed: ", manualSeed)
-random.seed(manualSeed)
-torch.manual_seed(manualSeed)
 
 # Root directory for dataset
 dataroot = "/home/christos_sevastopoulos/Downloads/POSITIVE_VINEYARD"
