@@ -25,7 +25,7 @@ batch_size = 64
 lr = 0.00001
 beta1 = 0.85
 
-dataroot = "/home/christos_sevastopoulos/Downloads/celeba/POSITIVE_VINEYARD"
+dataroot = "/home/christos_sevastopoulos/Downloads/POSITIVE_VINEYARD"
 device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
 
 
